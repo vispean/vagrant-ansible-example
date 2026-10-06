@@ -1,0 +1,47 @@
+---
+# Haupt-Playbook. Pro Host genau ein Play. Beim Provisioning mit ansible_local
+# läuft nur das Play, dessen hosts-Eintrag zum Maschinennamen passt.
+
+- name: Secrets-Datei prüfen (gilt für alle Hosts)
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Vorhandensein von vars/secrets.yml sicherstellen
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/vars/secrets.yml"
+      register: secrets_datei
+      delegate_to: localhost
+
+    - name: Abbruch mit Hinweis, falls Secrets fehlen
+      ansible.builtin.fail:
+        msg: >-
+          vars/secrets.yml fehlt. Bitte vars/secrets.yml.example kopieren,
+          Passwörter setzen und NICHT committen (steht in .gitignore).
+      when: not secrets_datei.stat.exists
+
+- name: Datenbankserver
+  hosts: db01
+  become: true
+  vars_files:
+    - vars/secrets.yml
+  roles:
+    - common
+    - db
+
+- name: Webserver mit CMS
+  hosts: web01
+  become: true
+  vars_files:
+    - vars/secrets.yml
+  roles:
+    - common
+    - web
+
+- name: Admin-Zugang und Dateiablage
+  hosts: bastion01
+  become: true
+  vars_files:
+    - vars/secrets.yml
+  roles:
+    - common
+    - bastion

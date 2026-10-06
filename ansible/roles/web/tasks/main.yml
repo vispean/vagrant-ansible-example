@@ -1,0 +1,71 @@
+---
+# Webserver (nginx + PHP-FPM) mit WordPress als CMS, Datenbank auf db01.
+- name: Webserver- und PHP-Pakete installieren
+  ansible.builtin.apt:
+    name:
+      - nginx
+      - php-fpm
+      - php-mysql
+      - php-xml
+      - php-gd
+      - php-curl
+      - php-mbstring
+      - default-mysql-client
+    state: present
+
+- name: PHP-FPM-Socketpfad ermitteln
+  ansible.builtin.shell: "ls /run/php/php*-fpm.sock | head -n1"
+  register: php_sock
+  changed_when: false
+
+- name: WordPress herunterladen und entpacken
+  ansible.builtin.unarchive:
+    src: https://wordpress.org/latest.tar.gz
+    dest: /var/www/
+    remote_src: true
+    creates: /var/www/wordpress/wp-settings.php
+
+- name: Besitzrechte auf das WordPress-Verzeichnis setzen
+  ansible.builtin.file:
+    path: /var/www/wordpress
+    owner: www-data
+    group: www-data
+    recurse: true
+
+- name: wp-config.php aus Vorlage erzeugen
+  ansible.builtin.template:
+    src: wp-config.php.j2
+    dest: /var/www/wordpress/wp-config.php
+    owner: www-data
+    group: www-data
+    mode: "0640"
+  no_log: true
+
+- name: nginx-Vhost aus Vorlage erzeugen
+  ansible.builtin.template:
+    src: wordpress.nginx.j2
+    dest: /etc/nginx/sites-available/wordpress
+    mode: "0644"
+  notify: nginx neu laden
+
+- name: Standard-Vhost deaktivieren
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: nginx neu laden
+
+- name: WordPress-Vhost aktivieren
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/wordpress
+    dest: /etc/nginx/sites-enabled/wordpress
+    state: link
+  notify: nginx neu laden
+
+- name: Dienste aktivieren und starten
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop:
+    - nginx
+    - "{{ php_sock.stdout | regex_replace('^/run/php/(php[0-9.]+)-fpm.sock$', '\\1') }}-fpm"

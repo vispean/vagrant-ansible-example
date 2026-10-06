@@ -1,0 +1,54 @@
+---
+# Datenbankserver (MariaDB) für das CMS auf web01.
+- name: MariaDB-Server und Python-Treiber installieren
+  ansible.builtin.apt:
+    name:
+      - mariadb-server
+      - python3-pymysql
+    state: present
+
+- name: MariaDB auf dem privaten Netz erreichbar machen
+  ansible.builtin.lineinfile:
+    path: /etc/mysql/mariadb.conf.d/50-server.cnf
+    regexp: '^\s*bind-address'
+    line: "bind-address = {{ db_ip }}"
+  notify: MariaDB neu starten
+
+- name: MariaDB-Dienst aktivieren und starten
+  ansible.builtin.service:
+    name: mariadb
+    state: started
+    enabled: true
+
+# Handler würden sonst erst am Play-Ende greifen; hier direkt sicherstellen,
+# dass der Dienst mit der neuen bind-address läuft.
+- name: Meta – Handler jetzt ausführen
+  ansible.builtin.meta: flush_handlers
+
+- name: root-Passwort für MariaDB setzen (lokaler Socket)
+  community.mysql.mysql_user:
+    name: root
+    password: "{{ db_root_password }}"
+    login_unix_socket: /run/mysqld/mysqld.sock
+    state: present
+  no_log: true
+
+- name: Datenbank für das CMS anlegen
+  community.mysql.mysql_db:
+    name: "{{ wp_db_name }}"
+    state: present
+    login_user: root
+    login_password: "{{ db_root_password }}"
+    login_unix_socket: /run/mysqld/mysqld.sock
+
+- name: CMS-Datenbankbenutzer anlegen (nur von web01 aus)
+  community.mysql.mysql_user:
+    name: "{{ wp_db_user }}"
+    password: "{{ wp_db_password }}"
+    host: "{{ web_ip }}"
+    priv: "{{ wp_db_name }}.*:ALL"
+    state: present
+    login_user: root
+    login_password: "{{ db_root_password }}"
+    login_unix_socket: /run/mysqld/mysqld.sock
+  no_log: true

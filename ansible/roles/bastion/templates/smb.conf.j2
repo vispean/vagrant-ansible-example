@@ -1,0 +1,11 @@
+[global]
+   workgroup = WORKGROUP
+   server string = Alpenblick Dateiablage
+   security = user
+   map to guest = never
+
+[{{ samba_share_name }}]
+   path = {{ samba_share_path }}
+   browseable = yes
+   read only = no
+   valid users = {{ samba_user }}

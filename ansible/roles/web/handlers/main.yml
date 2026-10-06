@@ -1,0 +1,5 @@
+---
+- name: nginx neu laden
+  ansible.builtin.service:
+    name: nginx
+    state: reloaded

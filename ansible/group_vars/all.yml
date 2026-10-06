@@ -1,0 +1,20 @@
+---
+# Nicht-geheime Parameter, die mehrere Rollen brauchen.
+# Geheimnisse (Passwörter) stehen in vars/secrets.yml – nicht hier.
+
+netz_praefix: "192.168.56"
+
+web_ip: "{{ netz_praefix }}.11"
+db_ip:  "{{ netz_praefix }}.12"
+
+# Datenbank für das CMS
+wp_db_name: "wordpress"
+wp_db_user: "wpuser"
+
+# Admin-Konto auf bastion01 (SSH-Login)
+admin_user: "kundenadmin"
+
+# Samba-Freigabe auf bastion01
+samba_share_name: "Kunden"
+samba_share_path: "/srv/kunden"
+samba_user: "kundenadmin"

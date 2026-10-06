@@ -1,0 +1,14 @@
+---
+# Grundzustand für alle Hosts.
+- name: APT-Cache aktualisieren
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Basispakete installieren
+  ansible.builtin.apt:
+    name:
+      - iputils-ping
+      - curl
+      - ca-certificates
+    state: present
