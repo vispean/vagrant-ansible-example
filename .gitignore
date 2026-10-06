@@ -1,0 +1,27 @@
+# === Geheimnisse – niemals committen! ===
+ansible/vars/secrets.yml
+# die Vorlage bleibt im Repo:
+!ansible/vars/secrets.yml.example
+# weitere mögliche Secret-Dateien
+*.vault
+*.pem
+*.key
+id_rsa
+id_ed25519
+
+# === Vagrant ===
+.vagrant/
+*.box
+vagrant.log
+
+# === Ansible ===
+*.retry
+.ansible/
+
+# === Betriebssystem / Editor ===
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
